@@ -1,0 +1,13 @@
+{
+  "presets": [
+    [
+      "@etsx/babel-preset-app",
+      {
+        "isDebug": false,
+        "isModern": false,
+        "buildTarget": "client",
+        "loose": true
+      },
+    ]
+  ]
+}
