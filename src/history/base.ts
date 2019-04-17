@@ -57,22 +57,40 @@ export abstract class History {
   onError(errorCb: Router.ErrorHandler) {
     this.errorCbs.push(errorCb)
   }
-
+  /**
+   * 路由跳转
+   * @param location 地址
+   * @param onComplete 完成时
+   * @param onAbort 取消
+   */
   transitionTo(location: RawLocation, onComplete?: Router.CompleteHandler, onAbort?: Router.ErrorHandler) {
+    // 获取匹配的路由信息
     const route = this.router.match(location, this.current)
+    // 确认切换路由
     this.confirmTransition(route, () => {
+      /**
+       * 以下为切换路由成功或失败的回调
+       * 更新路由信息，对组件的 _route 属性进行赋值，触发组件渲染
+       * 调用 afterHooks 中的钩子函数
+       */
       this.updateRoute(route)
       if (typeof onComplete === 'function') {
+        // 如果有完成，就触发完成回调
         onComplete(route)
       }
+      // 更新 URL
       this.ensureURL()
 
-      // fire ready cbs once
+      /**
+       * 只执行一次 ready 回调
+       * fire ready cbs once
+       */
       if (!this.ready) {
         this.ready = true
         this.readyCbs.forEach((cb) => { cb(route) })
       }
     }, (err) => {
+      // 错误处理
       if (onAbort) {
         onAbort(err)
       }
@@ -82,9 +100,15 @@ export abstract class History {
       }
     })
   }
-
+  /**
+   * 确认切换路由
+   * @param route
+   * @param onComplete
+   * @param onAbort
+   */
   confirmTransition(route: Route, onComplete: Router.CompleteHandler, onAbort?: Router.ErrorHandler) {
     const current = this.current
+    // 定义中断跳转路由函数
     const abort = (err?: Error) => {
       if (err && isError(err)) {
         if (this.errorCbs.length) {
@@ -101,6 +125,7 @@ export abstract class History {
         onAbort(err as Error)
       }
     }
+    // 如果是相同的路由就不跳转
     if (
       isSameRoute(route, current) &&
       // in the case the route map has been dynamically appended to
@@ -110,32 +135,43 @@ export abstract class History {
       return abort()
     }
 
+    // 通过对比路由解析出可复用的组件，需要渲染的组件，失活的组件
     const {
       updated,
       deactivated,
       activated,
     } = resolveQueue(this.current.matched, route.matched)
 
+    // 导航守卫数组
     const queue: Router.NavigationGuard[] = [].concat(
-      // in-component leave guards
+      // 失活的组件钩子 [in-component leave guards]
       extractLeaveGuards(deactivated),
-      // global before hooks
+      // 全局 beforeEach 钩子
       this.router.beforeHooks,
-      // in-component update hooks
+      // 在当前路由改变，但是该组件被复用时调用[in-component update hooks]
       extractUpdateHooks(updated),
-      // in-config enter guards
+      // 需要渲染组件 enter 守卫钩子[in-config enter guards]
       activated.map((m) => m.beforeEnter),
-      // async components
+      // 解析异步路由组件[async components]
       resolveAsyncComponents(activated),
     )
-
+    // 保存路由
     this.pending = route
-    const iterator = (hook: Router.NavigationGuard, next) => {
+    // 迭代器，用于执行 queue 中的导航守卫钩子
+    const iterator = (hook: Router.NavigationGuard, next: (...args: any[]) => any) => {
+      // 路由不相等就不跳转路由
       if (this.pending !== route) {
         return abort()
       }
       try {
+        // 试图执行钩子
         hook(route, current, (to: any) => {
+          /**
+           * 只有执行了钩子函数中的 next，
+           * 才会继续执行下一个钩子函数
+           * 否则会暂停跳转
+           * 以下逻辑是在判断 next() 中的传参
+           */
           if (to === false || isError(to)) {
             // next(false) -> abort navigation, ensure current URL
             this.ensureURL(true)
@@ -148,6 +184,7 @@ export abstract class History {
             ))
           ) {
             // next('/') or next({ path: '/' }) -> redirect
+            // next('/') 或者 next({ path: '/' }) -> 重定向
             abort()
             if (typeof to === 'object' && to.replace) {
               this.replace(to)
@@ -156,6 +193,7 @@ export abstract class History {
             }
           } else {
             // confirm transition and pass on the value
+            // 也就是执行下面函数 runQueue 中的 step(index + 1)
             next(to)
           }
         })
@@ -163,15 +201,18 @@ export abstract class History {
         abort(e)
       }
     }
-
+    // 经典的同步执行异步函数
     runQueue(queue, iterator, () => {
       const postEnterCbs = []
       const isValid = () => this.current === route
+      // 当所有异步组件加载完成后，会执行这里的回调，也就是 runQueue 中的 cb()
+      // 接下来执行 需要渲染组件的导航守卫钩子
       // wait until async components are resolved before
       // extracting in-component enter guards
-      const enterGuards = extractEnterGuards(activated, postEnterCbs, isValid)
+      const enterGuards: Router.NavigationGuard[] = extractEnterGuards(activated, postEnterCbs, isValid)
       const queue = enterGuards.concat(this.router.resolveHooks)
       runQueue(queue, iterator, () => {
+        // 跳转完成
         if (this.pending !== route) {
           return abort()
         }
@@ -227,13 +268,17 @@ function resolveQueue(
   let i
   const max = Math.max(current.length, next.length)
   for (i = 0; i < max; i++) {
+    // 当前路由路径和跳转路由路径不同时跳出遍历
     if (current[i] !== next[i]) {
       break
     }
   }
   return {
+    // 可复用的组件对应路由
     updated: next.slice(0, i),
+    // 需要渲染的组件对应路由
     activated: next.slice(i),
+    // 失活的组件对应路由
     deactivated: current.slice(i),
   }
 }
@@ -252,6 +297,10 @@ function extractGuards(
         : bind(guard, instance, match, key)
     }
   })
+  /**
+   * 数组降维，并且判断是否需要翻转数组
+   * 因为某些钩子函数需要从子执行到父
+   */
   return flatten(reverse ? guards.reverse() : guards)
 }
 

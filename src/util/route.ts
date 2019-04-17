@@ -10,12 +10,12 @@ export function createRoute(
   router?: Router,
 ): Route {
   const stringifyQuery = router && router.options.stringifyQuery
-
+  // 克隆参数
   let query: any = location.query || {}
   try {
     query = clone(query)
   } catch (e) { }
-
+  // 创建路由对象
   const route: Route = {
     name: location.name || (record && record.name),
     meta: (record && record.meta) || {},
@@ -29,6 +29,7 @@ export function createRoute(
   if (redirectedFrom) {
     route.redirectedFrom = getFullPath(redirectedFrom, stringifyQuery)
   }
+  // 冻结，让路由对象不可修改
   return Object.freeze(route)
 }
 
@@ -50,6 +51,8 @@ function clone<O extends any = any>(value: O): O {
 // the starting route that represents the initial state
 export const START = createRoute(void 0, { path: '/' })
 
+// 获得包含当前路由的所有嵌套路径片段的路由记录
+// 包含从根路由到当前路由的匹配记录，从上至下
 function formatMatch(record?: RouteRecord): RouteRecord[] {
   const res = []
   while (record) {

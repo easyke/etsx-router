@@ -52,19 +52,27 @@ export class Matcher {
     currentRoute?: Route,
     redirectedFrom?: EtsxLocation,
   ): Route {
+    // 序列化 url
+    // 比如对于该 url 来说 /abc?foo=bar&baz=qux#hello
+    // 会序列化路径为 /abc
+    // 哈希为 #hello
+    // 参数为 foo: 'bar', baz: 'qux'
     const location = normalizeLocation(raw, currentRoute, false, this.router)
     const { name } = location
 
+    // 如果是命名路由，就判断记录中是否有该命名路由配置
     if (name) {
       const record = this.nameMap[name]
       if (process.env.NODE_ENV !== 'production') {
         warn(record, `Route with name '${name}' does not exist`)
       }
+      // 没找到表示没有匹配的路由
       if (!record) return this._createRoute(void 0, location)
       const paramNames = record.keys
         .filter((key) => !key.optional)
         .map((key) => key.name)
 
+      // 参数处理
       if (typeof location.params !== 'object') {
         location.params = {}
       }
@@ -82,19 +90,25 @@ export class Matcher {
         return this._createRoute(record, location, redirectedFrom)
       }
     } else if (location.path) {
+      // 非命名路由处理
       location.params = {}
       // tslint:disable-next-line:prefer-for-of
       for (let i = 0; i < this.pathList.length; i++) {
+        // 查找记录
         const path = this.pathList[i]
         const record = this.pathMap[path]
+        // 如果匹配路由，则创建路由
         if (matchRoute(record, location.path, location.params)) {
           return this._createRoute(record, location, redirectedFrom)
         }
       }
     }
-    // no match
+    // 没有匹配的路由 no match
     return this._createRoute(void 0, location)
   }
+  /**
+   * 根据条件创建不同的路由
+   */
   protected _createRoute(
     record: RouteRecord | undefined,
     location: EtsxLocation,
