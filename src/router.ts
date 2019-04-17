@@ -1,18 +1,26 @@
 import pathToRegexp from 'path-to-regexp'
+import { createMatcher } from './matcher'
+import { inBrowser } from './util/dom'
+import { assert } from './util/warn'
+import { cleanPath } from './util/path'
+import { START } from './util/route'
+import { supportsPushState } from './util/push-state'
+import { normalizeLocation } from './util/location'
+
 import { HashHistory } from './history/hash'
 import { HTML5History } from './history/html5'
 import { AbstractHistory } from './history/abstract'
+
+const isWeex = false
 
 export class Router  {
 
   fullpath: renderToString
   component: null | ComponentInterface
-  createElement: null | Function
   RouterView: ComponentInterface
   forceUpdate: null | Function
 
   etsx: any;
-  currentRoute: Router.Route;
 
   options: Router.Options
   mode: Router.mode;
@@ -28,40 +36,43 @@ export class Router  {
     this.beforeHooks = []
     this.resolveHooks = []
     this.afterHooks = []
+    /**
+     * 创建路由映射表
+     */
+    this.matcher = createMatcher(this.options.routes || [], this)
 
-    this.fullpath = '/'
-    this.component = options.defaultComponent || null
-    this.forceUpdate = null
-    this.createElement = options.createElement
-    this.matcher = createMatcher(options.routes || [], this)
-    this.RouterView = createRouterView(this)
-
-    if (options.mode) {
-      this.mode = options.mode
+    if (this.options.mode) {
+      this.mode = this.options.mode
     } else if (isWeex) {
       this.mode = 'weex'
     } else if (inBrowser) {
-      this.mode = 'history'
+      this.mode = this.options.mode || 'history'
+      this.fallback = this.mode === 'history' && !supportsPushState && this.options.fallback !== false
+      if (this.fallback) {
+        this.mode = 'hash'
+      }
     } else {
       this.mode = 'abstract'
     }
 
     switch (this.mode) {
       // case 'weex':
-      //   this.history = new WeexHistory(this, options.base)
+      //   this.history = new WeexHistory(this, this.options.base)
       //   break
-      // case 'history':
-      //   this.history = new HTML5History(this, options.base)
+      case 'history':
+        this.history = new HTML5History(this, this.options.base)
+        break
+      // case 'hash':
+      //   this.history = new HashHistory(this, this.options.base, this.fallback)
       //   break
       case 'abstract':
-        this.history = new AbstractHistory(this, options.base)
+        this.history = new AbstractHistory(this, this.options.base)
         break
       default:
         if (process.env.NODE_ENV !== 'production') {
           assert(false, `invalid mode: ${this.mode}`)
         }
     }
-    this.redirect(this.fullpath)
   }
   beforeEach(guard: Router.NavigationGuard): Router.unHook {
     return registerHook(this.beforeHooks, guard)
@@ -109,31 +120,83 @@ export class Router  {
   forward(): void {
     this.go(1)
   }
-  redirect(fullpath) {
-    if (fullpath == null) {
-      return Promise.reject(new RouterError('fullpath cannot be empty', 'MUST_FULLPATH_REQUIRED'))
+  currentRoute(): Route | void {
+    return this.history && this.history.current
+  }
+  getMatchedComponents(to?: RawLocation | Route): any[] {
+    console.log('getMatchedComponents')
+    const route: any = to
+      ? to.matched
+        ? to
+        : this.resolve(to).route
+      : this.currentRoute
+    if (!route) {
+      return []
     }
-    this.fullpath = fullpath
-    return this.match(fullpath)
-      .then((component) => {
-        // 检查当前完整路径，避免路由器在延迟加载完成之前已更改
-        if (fullpath === this.fullpath) {
-          this.component = component
-          if (typeof this.forceUpdate === 'function') {
-            // 更新渲染
-            return new Promise((resolve) => this.forceUpdate(resolve))
-          }
-        }
-      }, (error) => {
-        // 触发错误
-        return this.errorHandler(error, { pathname: fullpath })
+    return [].concat.apply([], route.matched.map((m) => {
+      console.log(99988,m);
+      return Object.keys(m.components).map((key) => {
+        return m.components[key]
       })
+    }))
   }
-  addRoutes(routes: Router.config[]): void;
-  getMatchedComponents(to?: RawLocation | Router.Route): Component[]
-  match(fullpath: string): ComponentInterface {
-    return this.matcher.match(fullpath)
+  resolve(
+    to: RawLocation,
+    current?: Route,
+    append?: boolean,
+  ): {
+    location: Location,
+    route: Route,
+    href: string,
+    // for backwards compat
+    normalizedTo: Location,
+    resolved: Route,
+  } {
+    current = current || this.history.current
+    const location = normalizeLocation(
+      to,
+      current,
+      append,
+      this,
+    )
+    const route = this.match(location, current)
+    const fullPath = route.redirectedFrom || route.fullPath
+    const base = this.history.base
+    const href = createHref(base, fullPath, this.mode)
+    return {
+      location,
+      route,
+      href,
+      // for backwards compat
+      normalizedTo: location,
+      resolved: route,
+    }
   }
+  /**
+   * 路由匹配
+   * @param raw 原始路径
+   * @param current 当前路由
+   * @param redirectedFrom 来源路由
+   */
+  match(
+    raw: RawLocation,
+    current?: Route,
+    redirectedFrom?: EtsxLocation,
+  ): Route {
+    return this.matcher.match(raw, current, redirectedFrom)
+  }
+
+  addRoutes(routes: Router.Config[]) {
+    this.matcher.addRoutes(routes)
+    if (this.history.current !== START) {
+      this.history.transitionTo(this.history.getCurrentLocation())
+    }
+  }
+}
+
+function createHref(base: string, fullPath: string, mode: Router.mode) {
+  const path = mode === 'hash' ? '#' + fullPath : fullPath
+  return base ? cleanPath(base + '/' + path) : path
 }
 
 function registerHook(list: Array<Router.NavigationGuard | Router.AfterNavigationHook>, fn: Router.NavigationGuard | Router.AfterNavigationHook): Router.unHook {

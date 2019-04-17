@@ -67,15 +67,16 @@ export function resolveAsyncComponents(matched: RouteRecord[]): Function {
     if (!hasAsync) next()
   }
 }
-export function flatMapComponents(
+export function flatMapComponents<R>(
   matched: RouteRecord[],
-  fn: Function,
-): Array<new () => any> {
+  fn: (component: new () => any) => R,
+): R[] {
   return flatten(matched.map((m) => {
     return Object.keys(m.components).map((key) => fn(
       m.components[key],
       m.instances[key],
-      m, key,
+      m,
+      key,
     ))
   }))
 }

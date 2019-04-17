@@ -11,8 +11,7 @@ export function normalizeLocation(
   append?: boolean,
   router?: Router,
 ): EtsxLocation {
-  type next = EtsxLocation & { _normalized?: boolean; }
-  let next: next = typeof raw === 'string' ? { path: raw } : raw
+  let next: EtsxLocation = typeof raw === 'string' ? { path: raw } : raw
   // named target
   if (next._normalized) {
     return next

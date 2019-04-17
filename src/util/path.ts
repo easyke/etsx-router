@@ -1,3 +1,10 @@
+export function normalizePath(path: string, parent?: RouteRecord, strict?: boolean): string {
+  if (!strict) path = path.replace(/\/$/, '')
+  if (path[0] === '/') return path
+  if (parent == null) return path
+  return cleanPath(`${parent.path}/${path}`)
+}
+
 export function resolvePath(
   relative: string,
   base: string,

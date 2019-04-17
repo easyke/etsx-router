@@ -17,7 +17,7 @@ export abstract class History {
   ready: boolean;
   readyCbs: Router.ReadyHandler[];
   readyErrorCbs: Router.ErrorHandler[];
-  errorCbs: Function[];
+  errorCbs: Router.ErrorHandler[];
 
   // implemented by sub-classes
   abstract go(n: number): void;
@@ -54,11 +54,11 @@ export abstract class History {
     }
   }
 
-  onError(errorCb: Function) {
+  onError(errorCb: Router.ErrorHandler) {
     this.errorCbs.push(errorCb)
   }
 
-  transitionTo(location: RawLocation, onComplete?: Function, onAbort?: Function) {
+  transitionTo(location: RawLocation, onComplete?: Router.CompleteHandler, onAbort?: Router.ErrorHandler) {
     const route = this.router.match(location, this.current)
     this.confirmTransition(route, () => {
       this.updateRoute(route)
@@ -83,19 +83,22 @@ export abstract class History {
     })
   }
 
-  confirmTransition(route: Route, onComplete: Router.CompleteHandler, onAbort?: Function) {
+  confirmTransition(route: Route, onComplete: Router.CompleteHandler, onAbort?: Router.ErrorHandler) {
     const current = this.current
-    const abort = (err) => {
-      if (isError(err)) {
+    const abort = (err?: Error) => {
+      if (err && isError(err)) {
         if (this.errorCbs.length) {
           this.errorCbs.forEach((cb) => { cb(err) })
         } else {
           warn(false, 'uncaught error during route navigation:')
-          console.error(err)
+          if (console) {
+            // tslint:disable-next-line:no-console
+            console.error(err)
+          }
         }
       }
       if (typeof onAbort === 'function') {
-        onAbort(err)
+        onAbort(err as Error)
       }
     }
     if (
@@ -255,7 +258,7 @@ function extractGuards(
 function extractGuard(
   def: Object | Function,
   key: string,
-): NavigationGuard | NavigationGuard[] {
+): Router.NavigationGuard | Router.NavigationGuard[] {
   if (typeof def !== 'function') {
     // extend now so that global mixins are applied.
     def = _Vue.extend(def)
@@ -271,7 +274,7 @@ function extractUpdateHooks(updated: RouteRecord[]): Array<?Function> {
   return extractGuards(updated, 'beforeRouteUpdate', bindGuard)
 }
 
-function bindGuard(guard: NavigationGuard, instance: ?_Vue): ?NavigationGuard {
+function bindGuard(guard: Router.NavigationGuard, instance: ?_Vue): ?Router.NavigationGuard {
   if (instance) {
     return function boundRouteGuard() {
       return guard.apply(instance, arguments)
@@ -290,12 +293,12 @@ function extractEnterGuards(
 }
 
 function bindEnterGuard(
-  guard: NavigationGuard,
+  guard: Router.NavigationGuard,
   match: RouteRecord,
   key: string,
   cbs: Function[],
   isValid: () => boolean,
-): NavigationGuard {
+): Router.NavigationGuard {
   return function routeEnterGuard(to, from, next) {
     return guard(to, from, (cb) => {
       next(cb)

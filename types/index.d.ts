@@ -7,6 +7,7 @@ declare class RouteRegExp extends RegExp {
 }
 declare type RoutePropsFunction = (route: Route) => props;
 declare type EtsxLocation = {
+  _normalized?: boolean;
   name?: string;
   path?: string;
   hash?: string;
@@ -60,6 +61,7 @@ declare type RouteRecord<Component extends any = any> = {
    */
   path: string;
   regex: RegExp;
+  keys: any[];
   components: Dictionary<Component>;
   /**
    * 当前路由的名称，如果有的话。
@@ -75,11 +77,7 @@ declare type RouteRecord<Component extends any = any> = {
   /**
    * 路由前置守卫
    */
-  beforeEnter?: (
-    route: Route,
-    redirect: (location: RawLocation) => void,
-    next: () => void,
-  ) => any;
+  beforeEnter?: Router.NavigationGuard;
   props: boolean | props | RoutePropsFunction | Dictionary<boolean | props | RoutePropsFunction>;
 }
 declare abstract class Router {
@@ -115,9 +113,9 @@ declare namespace Router {
   /**
    * "weex" (weex环境) | "history" (浏览器环境) | "abstract" (Node.js 环境)
    */
-  export type mode = "weex" | "history" | "abstract";
+  export type mode = "hash" | "weex" | "history" | "abstract";
   
-  export type ReadyHandler = () => void;
+  export type ReadyHandler = (route?: Route) => void;
   export type ErrorHandler = (err: Error) => void;
   export type CompleteHandler = (route: Route) => void;
 
