@@ -11,7 +11,6 @@ import {
 export abstract class History {
   router: Router;
   base: string;
-  current: Route;
   pending?: Route;
   cb: Router.listenCallback;
   ready: boolean;
@@ -30,7 +29,7 @@ export abstract class History {
     this.router = router
     this.base = normalizeBase(base)
     // start with a route object that stands for "nowhere"
-    this.current = START
+    this.router.currentRoute = START
     this.pending = void 0
     this.ready = false
     this.readyCbs = []
@@ -65,7 +64,7 @@ export abstract class History {
    */
   transitionTo(location: RawLocation, onComplete?: Router.CompleteHandler, onAbort?: Router.ErrorHandler) {
     // 获取匹配的路由信息
-    const route = this.router.match(location, this.current)
+    const route = this.router.match(location, this.router.currentRoute = START)
     // 确认切换路由
     this.confirmTransition(route, () => {
       /**
@@ -107,7 +106,7 @@ export abstract class History {
    * @param onAbort
    */
   confirmTransition(route: Route, onComplete: Router.CompleteHandler, onAbort?: Router.ErrorHandler) {
-    const current = this.current
+    const current = this.router.currentRoute
     // 定义中断跳转路由函数
     const abort = (err?: Error) => {
       if (err && isError(err)) {
@@ -134,14 +133,18 @@ export abstract class History {
       this.ensureURL()
       return abort()
     }
-
+console.log('---9---')
     // 通过对比路由解析出可复用的组件，需要渲染的组件，失活的组件
     const {
+      // 可复用的组件对应路由
       updated,
+      // 失活的组件对应路由
       deactivated,
+      // 需要渲染的组件对应路由
       activated,
-    } = resolveQueue(this.current.matched, route.matched)
+    } = resolveQueue(this.router.currentRoute.matched, route.matched)
 
+    console.log('---9-3--')
     // 导航守卫数组
     const queue: Router.NavigationGuard[] = [].concat(
       // 失活的组件钩子 [in-component leave guards]
@@ -155,6 +158,7 @@ export abstract class History {
       // 解析异步路由组件[async components]
       resolveAsyncComponents(activated),
     )
+    console.log('---92---')
     // 保存路由
     this.pending = route
     // 迭代器，用于执行 queue 中的导航守卫钩子
@@ -163,9 +167,12 @@ export abstract class History {
       if (this.pending !== route) {
         return abort()
       }
+      console.log('---iterator---2---')
       try {
+        console.log('---iterator---2-2--', hook)
         // 试图执行钩子
         hook(route, current, (to: any) => {
+          console.log('---iterator---2-5--')
           /**
            * 只有执行了钩子函数中的 next，
            * 才会继续执行下一个钩子函数
@@ -198,25 +205,28 @@ export abstract class History {
           }
         })
       } catch (e) {
+        console.log('ee',e)
         abort(e)
       }
     }
     // 经典的同步执行异步函数
     runQueue(queue, iterator, () => {
-      const postEnterCbs = []
-      const isValid = () => this.current === route
+      console.log('----3----***9*----')
+      const postEnterCbs: Array<() => void> = []
+      const isValid = () => this.router.currentRoute === route
       // 当所有异步组件加载完成后，会执行这里的回调，也就是 runQueue 中的 cb()
       // 接下来执行 需要渲染组件的导航守卫钩子
       // wait until async components are resolved before
       // extracting in-component enter guards
       const enterGuards: Router.NavigationGuard[] = extractEnterGuards(activated, postEnterCbs, isValid)
       const queue = enterGuards.concat(this.router.resolveHooks)
+      console.log('-----4---***9*----')
       runQueue(queue, iterator, () => {
         // 跳转完成
         if (this.pending !== route) {
           return abort()
         }
-        this.pending = null
+        this.pending = void 0
         onComplete(route)
         if (this.router.app) {
           this.router.app.$nextTick(() => {
@@ -228,12 +238,12 @@ export abstract class History {
   }
 
   updateRoute(route: Route) {
-    const prev = this.current
-    this.current = route
-    this.cb && this.cb(route)
-    this.router.afterHooks.forEach((hook) => {
-      hook && hook(route, prev)
-    })
+    const prev = this.router.currentRoute
+    this.router.currentRoute = route
+    if (this.cb) {
+      this.cb(route)
+    }
+    this.router.afterHooks.forEach((hook) => hook && hook(route, prev))
   }
 }
 
@@ -314,7 +324,9 @@ function extractGuard(
   }
   return def.options[key]
 }
-
+/**
+ * 执行失活组件的钩子函数
+ */
 function extractLeaveGuards(deactivated: RouteRecord[]): Array<?Function> {
   return extractGuards(deactivated, 'beforeRouteLeave', bindGuard, true)
 }
@@ -323,11 +335,9 @@ function extractUpdateHooks(updated: RouteRecord[]): Array<?Function> {
   return extractGuards(updated, 'beforeRouteUpdate', bindGuard)
 }
 
-function bindGuard(guard: Router.NavigationGuard, instance: ?_Vue): ?Router.NavigationGuard {
+function bindGuard(guard: Router.NavigationGuard, instance: ?_Vue): Router.NavigationGuard | void {
   if (instance) {
-    return function boundRouteGuard() {
-      return guard.apply(instance, arguments)
-    }
+    return guard.bind(instance)
   }
 }
 
@@ -335,7 +345,7 @@ function extractEnterGuards(
   activated: RouteRecord[],
   cbs: Function[],
   isValid: () => boolean,
-): Array<?Function> {
+): Router.NavigationGuard[] {
   return extractGuards(activated, 'beforeRouteEnter', (guard, _, match, key) => {
     return bindEnterGuard(guard, match, key, cbs, isValid)
   })

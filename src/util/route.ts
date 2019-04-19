@@ -69,7 +69,9 @@ function getFullPath(
   const stringify = _stringifyQuery || stringifyQuery
   return (path || '/') + stringify(query) + hash
 }
-
+/**
+ * 判断两个路由是否为同一个路由
+ */
 export function isSameRoute(a: Route, b?: Route): boolean {
   if (b === START) {
     return a === b

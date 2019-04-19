@@ -29,7 +29,7 @@ export class HashHistory extends History {
     }
 
     window.addEventListener(supportsPushState ? 'popstate' : 'hashchange', () => {
-      const current = this.current
+      const current = this.router.currentRoute
       if (!ensureSlash()) {
         return
       }
@@ -45,7 +45,7 @@ export class HashHistory extends History {
   }
 
   push(location: RawLocation, onComplete?: Router.CompleteHandler, onAbort?: Router.ErrorHandler): void {
-    const { current: fromRoute } = this
+    const fromRoute = this.router.currentRoute
     this.transitionTo(location, (route: Route) => {
       pushHash(route.fullPath)
       handleScroll(this.router, route, fromRoute, false)
@@ -56,7 +56,7 @@ export class HashHistory extends History {
   }
 
   replace(location: RawLocation, onComplete?: Router.CompleteHandler, onAbort?: Router.ErrorHandler): void {
-    const { current: fromRoute } = this
+    const fromRoute = this.router.currentRoute
     this.transitionTo(location, (route: Route) => {
       replaceHash(route.fullPath)
       handleScroll(this.router, route, fromRoute, false)
@@ -71,7 +71,7 @@ export class HashHistory extends History {
   }
 
   ensureURL(push?: boolean) {
-    const current = this.current.fullPath
+    const current = this.router.currentRoute.fullPath
     if (getHash() !== current) {
       push ? pushHash(current) : replaceHash(current)
     }

@@ -15,7 +15,7 @@ module.exports = {
       return entries;
     }
     const fullDir = path.join(__dirname, dir)
-    const entry = path.join(fullDir, 'app.js')
+    const entry = path.join(fullDir, 'app.jsx')
     if (fs.statSync(fullDir).isDirectory() && fs.existsSync(entry)) {
       entries[dir] = [entry]
     }

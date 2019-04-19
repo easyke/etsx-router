@@ -20,12 +20,12 @@ export class HTML5History extends History {
 
     const initLocation = getLocation(this.base)
     window.addEventListener('popstate', (e) => {
-      const current = this.current
+      const current = this.router.currentRoute
 
       // Avoiding first `popstate` event dispatched in some browsers but first
       // history route not updated since async guard at the same time.
       const location = getLocation(this.base)
-      if (this.current === START && location === initLocation) {
+      if (this.router.currentRoute === START && location === initLocation) {
         return
       }
 
@@ -42,7 +42,7 @@ export class HTML5History extends History {
   }
 
   push(location: RawLocation, onComplete?: Router.CompleteHandler, onAbort?: Router.ErrorHandler): void {
-    const { current: fromRoute } = this
+    const fromRoute = this.router.currentRoute
     this.transitionTo(location, (route: Route) => {
       pushState(cleanPath(this.base + route.fullPath))
       handleScroll(this.router, route, fromRoute, false)
@@ -53,7 +53,7 @@ export class HTML5History extends History {
   }
 
   replace(location: RawLocation, onComplete?: Router.CompleteHandler, onAbort?: Router.ErrorHandler): void {
-    const { current: fromRoute } = this
+    const fromRoute = this.router.currentRoute
     this.transitionTo(location, (route: Route) => {
       replaceState(cleanPath(this.base + route.fullPath))
       handleScroll(this.router, route, fromRoute, false)
@@ -64,8 +64,8 @@ export class HTML5History extends History {
   }
 
   ensureURL(push?: boolean) {
-    if (getLocation(this.base) !== this.current.fullPath) {
-      const current = cleanPath(this.base + this.current.fullPath)
+    if (getLocation(this.base) !== this.router.currentRoute.fullPath) {
+      const current = cleanPath(this.base + this.router.currentRoute.fullPath)
       push ? pushState(current) : replaceState(current)
     }
   }

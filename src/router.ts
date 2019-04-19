@@ -1,5 +1,5 @@
 import pathToRegexp from 'path-to-regexp'
-import { createMatcher } from './matcher'
+import { createMatcher, Matcher } from './matcher'
 import { inBrowser } from './util/dom'
 import { assert } from './util/warn'
 import { cleanPath } from './util/path'
@@ -14,15 +14,10 @@ import { AbstractHistory } from './history/abstract'
 const isWeex = false
 
 export class Router  {
-
-  fullpath: renderToString
-  component: null | ComponentInterface
-  RouterView: ComponentInterface
-  forceUpdate: null | Function
-
   etsx: any;
-
+  Link: any;
   options: Router.Options
+  currentRoute: Route;
   mode: Router.mode;
   history: HashHistory | HTML5History | AbstractHistory;
   matcher: Matcher;
@@ -36,18 +31,19 @@ export class Router  {
     this.beforeHooks = []
     this.resolveHooks = []
     this.afterHooks = []
+    this.currentRoute = START
     /**
      * 创建路由映射表
      */
     this.matcher = createMatcher(this.options.routes || [], this)
 
+    this.fallback = this.options.mode === 'history' && !supportsPushState && this.options.fallback !== false
     if (this.options.mode) {
       this.mode = this.options.mode
     } else if (isWeex) {
       this.mode = 'weex'
     } else if (inBrowser) {
       this.mode = this.options.mode || 'history'
-      this.fallback = this.mode === 'history' && !supportsPushState && this.options.fallback !== false
       if (this.fallback) {
         this.mode = 'hash'
       }
@@ -62,13 +58,14 @@ export class Router  {
       case 'history':
         this.history = new HTML5History(this, this.options.base)
         break
-      // case 'hash':
-      //   this.history = new HashHistory(this, this.options.base, this.fallback)
-      //   break
+      case 'hash':
+        this.history = new HashHistory(this, this.options.base, this.fallback)
+        break
       case 'abstract':
         this.history = new AbstractHistory(this, this.options.base)
         break
       default:
+        this.history = new AbstractHistory(this, this.options.base)
         if (process.env.NODE_ENV !== 'production') {
           assert(false, `invalid mode: ${this.mode}`)
         }
@@ -120,39 +117,27 @@ export class Router  {
   forward(): void {
     this.go(1)
   }
-  currentRoute(): Route | void {
-    return this.history && this.history.current
-  }
   getMatchedComponents(to?: RawLocation | Route): any[] {
-    console.log('getMatchedComponents')
-    const route: any = to
-      ? to.matched
-        ? to
-        : this.resolve(to).route
+    const route: Route | void = to ? (to as Route).matched ? (to as Route) : this.resolve(to).route
       : this.currentRoute
     if (!route) {
       return []
     }
-    return [].concat.apply([], route.matched.map((m) => {
-      console.log(99988,m);
-      return Object.keys(m.components).map((key) => {
-        return m.components[key]
-      })
-    }))
+    return ([] as any[]).concat.apply([], route.matched.map((m: RouteRecord) => Object.keys(m.components).map((key) => m.components[key])))
   }
   resolve(
     to: RawLocation,
     current?: Route,
     append?: boolean,
   ): {
-    location: Location,
+    location: EtsxLocation,
     route: Route,
     href: string,
     // for backwards compat
-    normalizedTo: Location,
+    normalizedTo: EtsxLocation,
     resolved: Route,
   } {
-    current = current || this.history.current
+    current = current || this.currentRoute
     const location = normalizeLocation(
       to,
       current,
@@ -188,7 +173,7 @@ export class Router  {
 
   addRoutes(routes: Router.Config[]) {
     this.matcher.addRoutes(routes)
-    if (this.history.current !== START) {
+    if (this.currentRoute !== START) {
       this.history.transitionTo(this.history.getCurrentLocation())
     }
   }

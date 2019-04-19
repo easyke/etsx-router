@@ -1,7 +1,12 @@
 import { warn, isError } from './warn'
 
-export function resolveAsyncComponents(matched: RouteRecord[]): Function {
+/**
+ * 解析异步路由组件
+ * @param matched 已经匹配的路由记录
+ */
+export function resolveAsyncComponents(matched: RouteRecord[]): Router.NavigationGuard {
   return (to, from, next) => {
+    console.log('4444')
     let hasAsync = false
     let pending = 0
     let error: Error | null = null
@@ -71,7 +76,9 @@ export function flatMapComponents<R>(
   matched: RouteRecord[],
   fn: (component: new () => any) => R,
 ): R[] {
+  // 数组降维
   return flatten(matched.map((m) => {
+    // 将组件中的对象传入回调函数中，获得钩子函数数组
     return Object.keys(m.components).map((key) => fn(
       m.components[key],
       m.instances[key],
@@ -81,7 +88,10 @@ export function flatMapComponents<R>(
   }))
 }
 
-export function flatten(arr: any[]): any[] {
+/**
+ * 数组降维 - 转为平行
+ */
+export function flatten<A = any>(arr: A[][]): A[] {
   return Array.prototype.concat.apply([], arr)
 }
 
