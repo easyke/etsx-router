@@ -67,8 +67,6 @@ export function resolveAsyncComponents(matched: RouteRecord[]): Router.Navigatio
         }
       }
     })
-    // // // // 临时变同步
-    hasAsync = false
     if (!hasAsync) next()
   }
 }

@@ -163,8 +163,8 @@ export abstract class History {
       extractUpdateHooks(updated),
       // 需要渲染组件 enter 守卫钩子[in-config enter guards]
       activated.map((m) => m.beforeEnter),
-      // 解析异步路由组件[async components]
-      resolveAsyncComponents(activated),
+      // 解析异步路由组件[async components] - react 不建议支持Promise
+      // resolveAsyncComponents(activated),
     )
     // 保存路由
     this.pending = route

@@ -55,7 +55,6 @@ export default (router, { Component, createElement, PropTypes }) => class Router
       // clone to prevent mutation
       Object.assign(props, propsToPass)
     }
-    console.log('props', props)
     return createElement(component, props, children)
   }
   componentWillUnmount() {
