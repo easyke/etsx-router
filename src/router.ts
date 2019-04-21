@@ -16,6 +16,7 @@ const isWeex = false
 export class Router  {
   etsx: any;
   Link: any;
+  View: any;
   options: Router.Options
   currentRoute: Route;
   mode: Router.mode;

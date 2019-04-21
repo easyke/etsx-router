@@ -6,7 +6,6 @@ import { warn, isError } from './warn'
  */
 export function resolveAsyncComponents(matched: RouteRecord[]): Router.NavigationGuard {
   return (to, from, next) => {
-    console.log('4444')
     let hasAsync = false
     let pending = 0
     let error: Error | null = null
@@ -68,13 +67,14 @@ export function resolveAsyncComponents(matched: RouteRecord[]): Router.Navigatio
         }
       }
     })
-
+    // // // // 临时变同步
+    hasAsync = false
     if (!hasAsync) next()
   }
 }
 export function flatMapComponents<R>(
   matched: RouteRecord[],
-  fn: (component: new () => any) => R,
+  fn: (component: Component, i: ComponentInstance, m: RouteRecord, key: string) => R,
 ): R[] {
   // 数组降维
   return flatten(matched.map((m) => {

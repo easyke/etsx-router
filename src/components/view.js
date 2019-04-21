@@ -8,22 +8,55 @@ export default (router, { Component, createElement, PropTypes }) => class Router
   static propTypes = {
     name: PropTypes.string
   }
-
+  constructor(...args){
+    super(...args)
+    this.offForceUpdate = router.afterEach(() => this.forceUpdate && this.forceUpdate())
+    console.log('this.offForceUpdate', this.offForceUpdate)
+  }
   render() {
     const cache = this._routerViewCache || (this._routerViewCache = {})
-    const { name, children } = this.props
+    // resolve props
+    const { name, children, ...props } = this.props
     // 得到当前激活的 route 对象
     const route = router.currentRoute
     
+    const depth = 0
+    const inactive = false
+
+    // render previous view if the tree is inactive and kept-alive
+    if (inactive) {
+      return createElement(cache[name], props, children)
+    }
+
+    const matched = route.matched[depth]
+    // render empty node if no matched route
+    if (!matched) {
+      cache[name] = null
+      return (createElement('div', props, '没有'))
+      // return createElement()
+    }
+
+    const component = cache[name] = class extends matched.components[name]{
+      componentWillMount(){
+        matched.instances[name] = this
+        if (super.componentWillMount) {
+          return super.componentWillMount()
+        }
+      }
+      componentWillUnmount(){
+        matched.instances[name] = void 0
+        if (super.componentWillUnmount) {
+          return super.componentWillUnmount()
+        }
+      }
+    }
     
-    // resolve props
-    const props = {}
     const propsToPass = resolveProps(route, matched.props && matched.props[name])
     if (propsToPass) {
       // clone to prevent mutation
       Object.assign(props, propsToPass)
     }
-
+    console.log('props', props)
     return createElement(component, props, children)
   }
 }

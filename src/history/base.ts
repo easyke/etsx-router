@@ -8,6 +8,7 @@ import {
   flatMapComponents,
   resolveAsyncComponents,
 } from '../util/resolve-components'
+type postEnterCb = () => void;
 export abstract class History {
   router: Router;
   base: string;
@@ -133,20 +134,27 @@ export abstract class History {
       this.ensureURL()
       return abort()
     }
-console.log('---9---')
     // 通过对比路由解析出可复用的组件，需要渲染的组件，失活的组件
     const {
-      // 可复用的组件对应路由
+      /**
+       * 可复用的组件对应路由
+       * 原因是，使用了同一个组件[类]，可以复用实例，直接调用钩子来刷新数据
+       */
       updated,
-      // 失活的组件对应路由
+      /**
+       * 失活的组件对应路由
+       * 因为组件以不再使用，需要销毁的部分
+       */
       deactivated,
-      // 需要渲染的组件对应路由
+      /**
+       * 需要渲染的组件对应路由
+       * 因为，未曾使用过，需要全新加载使用
+       */
       activated,
     } = resolveQueue(this.router.currentRoute.matched, route.matched)
 
-    console.log('---9-3--')
     // 导航守卫数组
-    const queue: Router.NavigationGuard[] = [].concat(
+    const queue = ([] as Array<Router.NavigationGuard | void>).concat(
       // 失活的组件钩子 [in-component leave guards]
       extractLeaveGuards(deactivated),
       // 全局 beforeEach 钩子
@@ -158,7 +166,6 @@ console.log('---9---')
       // 解析异步路由组件[async components]
       resolveAsyncComponents(activated),
     )
-    console.log('---92---')
     // 保存路由
     this.pending = route
     // 迭代器，用于执行 queue 中的导航守卫钩子
@@ -167,12 +174,9 @@ console.log('---9---')
       if (this.pending !== route) {
         return abort()
       }
-      console.log('---iterator---2---')
       try {
-        console.log('---iterator---2-2--', hook)
         // 试图执行钩子
         hook(route, current, (to: any) => {
-          console.log('---iterator---2-5--')
           /**
            * 只有执行了钩子函数中的 next，
            * 才会继续执行下一个钩子函数
@@ -205,22 +209,19 @@ console.log('---9---')
           }
         })
       } catch (e) {
-        console.log('ee',e)
         abort(e)
       }
     }
     // 经典的同步执行异步函数
     runQueue(queue, iterator, () => {
-      console.log('----3----***9*----')
-      const postEnterCbs: Array<() => void> = []
+      const postEnterCbs: postEnterCb[] = []
       const isValid = () => this.router.currentRoute === route
       // 当所有异步组件加载完成后，会执行这里的回调，也就是 runQueue 中的 cb()
       // 接下来执行 需要渲染组件的导航守卫钩子
       // wait until async components are resolved before
       // extracting in-component enter guards
-      const enterGuards: Router.NavigationGuard[] = extractEnterGuards(activated, postEnterCbs, isValid)
+      const enterGuards: Array<Router.NavigationGuard | void> = extractEnterGuards(activated, postEnterCbs, isValid)
       const queue = enterGuards.concat(this.router.resolveHooks)
-      console.log('-----4---***9*----')
       runQueue(queue, iterator, () => {
         // 跳转完成
         if (this.pending !== route) {
@@ -296,9 +297,9 @@ function resolveQueue(
 function extractGuards(
   records: RouteRecord[],
   name: string,
-  bind: Function,
+  bind: any,
   reverse?: boolean,
-): Array<?Function> {
+): Array<Router.NavigationGuard | void> {
   const guards = flatMapComponents(records, (def, instance, match, key) => {
     const guard = extractGuard(def, name)
     if (guard) {
@@ -315,38 +316,58 @@ function extractGuards(
 }
 
 function extractGuard(
-  def: Object | Function,
+  def: Component,
   key: string,
-): Router.NavigationGuard | Router.NavigationGuard[] {
-  if (typeof def !== 'function') {
-    // extend now so that global mixins are applied.
-    def = _Vue.extend(def)
-  }
-  return def.options[key]
+): Router.NavigationGuard | void {
+  return def.prototype && def.prototype[key]
 }
 /**
  * 执行失活组件的钩子函数
+ * 也就是销毁前的回调
+ * 导航离开该组件的对应路由时调用
+ * 可以访问组件实例 `this`
  */
-function extractLeaveGuards(deactivated: RouteRecord[]): Array<?Function> {
+function extractLeaveGuards(deactivated: RouteRecord[]): Array<Router.NavigationGuard | void> {
   return extractGuards(deactivated, 'beforeRouteLeave', bindGuard, true)
 }
-
-function extractUpdateHooks(updated: RouteRecord[]): Array<?Function> {
+/**
+ * 使用了同一个组件[类]，可以复用实例，
+ * 直接调用钩子来刷新数据
+ * --
+ * 在当前路由改变，但是该组件被复用时调用
+ * 举例来说，对于一个带有动态参数的路径 /foo/:id，在 /foo/1 和 /foo/2 之间跳转的时候，
+ * 由于会渲染同样的 Foo 组件，因此组件实例会被复用。而这个钩子就会在这个情况下被调用。
+ * 可以访问组件实例 `this`
+ */
+function extractUpdateHooks(updated: RouteRecord[]): Array<Router.NavigationGuard | void> {
   return extractGuards(updated, 'beforeRouteUpdate', bindGuard)
 }
 
-function bindGuard(guard: Router.NavigationGuard, instance: ?_Vue): Router.NavigationGuard | void {
+/**
+ * 把钩子的`this`上下文绑定到要执行的`Component`实例中
+ * @param guard 守卫钩子
+ * @param instance 需要绑定是组件实例
+ */
+function bindGuard(guard: Router.NavigationGuard, instance?: Component): Router.NavigationGuard | void {
   if (instance) {
     return guard.bind(instance)
   }
 }
-
+/**
+ * 在渲染该组件的对应路由被 confirm 前调用
+ * 不！能！获取组件实例 `this`
+ * 因为当守卫执行前，组件实例还没被创建
+ *
+ * @param activated
+ * @param cbs
+ * @param isValid
+ */
 function extractEnterGuards(
   activated: RouteRecord[],
-  cbs: Function[],
+  cbs: postEnterCb[],
   isValid: () => boolean,
-): Router.NavigationGuard[] {
-  return extractGuards(activated, 'beforeRouteEnter', (guard, _, match, key) => {
+): Array<Router.NavigationGuard | void> {
+  return extractGuards(activated, 'beforeRouteEnter', (guard: Router.NavigationGuard, _: ComponentInstance, match: RouteRecord, key: string) => {
     return bindEnterGuard(guard, match, key, cbs, isValid)
   })
 }
@@ -355,7 +376,7 @@ function bindEnterGuard(
   guard: Router.NavigationGuard,
   match: RouteRecord,
   key: string,
-  cbs: Function[],
+  cbs: postEnterCb[],
   isValid: () => boolean,
 ): Router.NavigationGuard {
   return function routeEnterGuard(to, from, next) {
@@ -377,13 +398,13 @@ function bindEnterGuard(
 
 function poll(
   cb: any, // somehow flow cannot infer this is a function
-  instances: Object,
+  instances: Dictionary<ComponentInstance>,
   key: string,
   isValid: () => boolean,
 ) {
   if (
     instances[key] &&
-    !instances[key]._isBeingDestroyed // do not reuse being destroyed instance
+    !(instances[key] as any)._isBeingDestroyed // do not reuse being destroyed instance
   ) {
     cb(instances[key])
   } else if (isValid()) {

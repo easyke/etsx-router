@@ -1,4 +1,8 @@
-type Component = any;
+
+declare class ComponentInstance {
+  constructor(args: any[]);
+}
+declare type Component = ComponentInstance['constructor'];
 
 declare type props = object
 
@@ -63,6 +67,7 @@ declare type RouteRecord<Component extends any = any> = {
   regex: RegExp;
   keys: any[];
   components: Dictionary<Component>;
+  instances: Dictionary<ComponentInstance>;
   /**
    * 当前路由的名称，如果有的话。
    */

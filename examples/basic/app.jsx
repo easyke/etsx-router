@@ -32,6 +32,9 @@ const run = ({ Component, createElement, cloneElement }, PropTypes) => {
     render() {
       return createElement('div', {}, 'unicode')
     }
+    beforeRouteUpdate(){
+      console.log('44Unicode4')
+    }
   }
   // 2. Create the router
   const router = getRouter({
@@ -57,35 +60,10 @@ const run = ({ Component, createElement, cloneElement }, PropTypes) => {
     ],
   }, { Component, createElement, cloneElement, PropTypes})
   const RouterLink = router.Link
+  const RouterView = router.View
   console.log('router', router)
   // router.push('/foo')
 
-  class RouterView extends Component {
-    static defaultProps = {
-      tag: 'a',
-      event: 'click'
-    }
-    static propTypes = {
-      to: PropTypes.oneOfType([
-        PropTypes.string.isRequired,
-        PropTypes.object.isRequired
-      ]),
-      tag: PropTypes.string,
-      exact: PropTypes.bool,
-      append: PropTypes.bool,
-      replace: PropTypes.bool,
-      activeClass: PropTypes.string,
-      exactActiveClass: PropTypes.string,
-      event: PropTypes.oneOfType([
-        PropTypes.string,
-        PropTypes.arrayOf(PropTypes.string)
-      ])
-    }
-    render() {
-      console.log(5888558,this)
-      return (createElement('div', {}, 'ba3333r'))
-    }
-  }
   // 3. Create root app instance.
   return class App extends Component {
     constructor(...args) {
@@ -108,7 +86,7 @@ const run = ({ Component, createElement, cloneElement }, PropTypes) => {
         </ul>
         <pre id="query-t">{router.currentRoute.query.t}</pre>
         <pre id="hash">{router.currentRoute.hash}</pre>
-        <RouterView class="view"></RouterView>
+        <RouterView className="view"></RouterView>
       </div>)
     }
   }
