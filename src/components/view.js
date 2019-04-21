@@ -11,7 +11,6 @@ export default (router, { Component, createElement, PropTypes }) => class Router
   constructor(...args){
     super(...args)
     this.offForceUpdate = router.afterEach(() => this.forceUpdate && this.forceUpdate())
-    console.log('this.offForceUpdate', this.offForceUpdate)
   }
   render() {
     const cache = this._routerViewCache || (this._routerViewCache = {})
@@ -58,6 +57,12 @@ export default (router, { Component, createElement, PropTypes }) => class Router
     }
     console.log('props', props)
     return createElement(component, props, children)
+  }
+  componentWillUnmount() {
+    if (this.offForceUpdate) {
+      this.offForceUpdate()
+      this.offForceUpdate = void 0
+    }
   }
 }
 
