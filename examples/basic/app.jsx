@@ -22,18 +22,51 @@ const run = ({ Component, createElement, cloneElement }, PropTypes) => {
     render() {
       return createElement('div', {}, 'foo')
     }
+    beforeRouteUpdate(to, from, next) {
+      console.log('\nbeforeRouteUpdate-Foo-在当前路由改变，但是该组件被复用时调用', next)
+      next()
+    }
+    beforeRouteLeave(to, from, next) {
+      console.log('\nbeforeRouteLeave-Foo-导航离开该组件的对应路由时调用', next)
+      next()
+    }
+    beforeRouteEnter(to, from, next) {
+      console.log('\nbeforeRouteEnter-Foo-因为当守卫执行前，组件实例还没被创建', next)
+      next()
+    }
   }
   class Bar extends Component {
     render() {
       return createElement('div', {}, 'bar')
+    }
+    beforeRouteUpdate(to, from, next) {
+      console.log('\nbeforeRouteUpdate-Bar-在当前路由改变，但是该组件被复用时调用', next)
+      next()
+    }
+    beforeRouteLeave(to, from, next) {
+      console.log('\nbeforeRouteLeave-Bar-导航离开该组件的对应路由时调用', next)
+      next()
+    }
+    beforeRouteEnter(to, from, next) {
+      console.log('\nbeforeRouteEnter-Bar-因为当守卫执行前，组件实例还没被创建', next)
+      next()
     }
   }
   class Unicode extends Component {
     render() {
       return createElement('div', {}, 'unicode')
     }
-    beforeRouteUpdate(){
-      console.log('44Unicode4')
+    beforeRouteUpdate(to, from, next) {
+      console.log('\nbeforeRouteUpdate-Unicode-在当前路由改变，但是该组件被复用时调用', next)
+      next()
+    }
+    beforeRouteLeave(to, from, next) {
+      console.log('\nbeforeRouteLeave-Unicode-导航离开该组件的对应路由时调用', next)
+      next()
+    }
+    beforeRouteEnter(to, from, next) {
+      console.log('\nbeforeRouteEnter-Unicode-因为当守卫执行前，组件实例还没被创建', next)
+      next()
     }
   }
   // 2. Create the router

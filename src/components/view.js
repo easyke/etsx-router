@@ -18,6 +18,8 @@ export default (router, { Component, createElement, PropTypes }) => class Router
     const { name, children, ...props } = this.props
     // 得到当前激活的 route 对象
     const route = router.currentRoute
+    props.route = route
+    props.router = router
     
     const depth = 0
     const inactive = false
@@ -36,13 +38,15 @@ export default (router, { Component, createElement, PropTypes }) => class Router
     }
 
     const component = cache[name] = class extends matched.components[name]{
-      componentWillMount(){
+      componentWillMount() {
+        console.log('componentWillMount')
         matched.instances[name] = this
         if (super.componentWillMount) {
           return super.componentWillMount()
         }
       }
       componentWillUnmount(){
+        console.log('componentWillUnmount')
         matched.instances[name] = void 0
         if (super.componentWillUnmount) {
           return super.componentWillUnmount()

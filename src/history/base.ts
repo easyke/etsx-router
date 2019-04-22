@@ -65,7 +65,7 @@ export abstract class History {
    */
   transitionTo(location: RawLocation, onComplete?: Router.CompleteHandler, onAbort?: Router.ErrorHandler) {
     // 获取匹配的路由信息
-    const route = this.router.match(location, this.router.currentRoute = START)
+    const route = this.router.match(location, this.router.currentRoute)
     // 确认切换路由
     this.confirmTransition(route, () => {
       /**
@@ -301,11 +301,9 @@ function extractGuards(
   reverse?: boolean,
 ): Array<Router.NavigationGuard | void> {
   const guards = flatMapComponents(records, (def, instance, match, key) => {
-    const guard = extractGuard(def, name)
+    const guard = def.prototype && def.prototype[name]
     if (guard) {
-      return Array.isArray(guard)
-        ? guard.map((guard) => bind(guard, instance, match, key))
-        : bind(guard, instance, match, key)
+      return bind(guard, instance, match, key)
     }
   })
   /**
@@ -315,12 +313,6 @@ function extractGuards(
   return flatten(reverse ? guards.reverse() : guards)
 }
 
-function extractGuard(
-  def: Component,
-  key: string,
-): Router.NavigationGuard | void {
-  return def.prototype && def.prototype[key]
-}
 /**
  * 执行失活组件的钩子函数
  * 也就是销毁前的回调
