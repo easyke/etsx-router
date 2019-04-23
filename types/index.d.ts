@@ -92,6 +92,9 @@ declare abstract class Router {
   mode: Router.mode;
   currentRoute: Route;
 
+  getLink: (router: Router, options: any) => any;
+  getView: (router: Router, options: any) => any;
+  
   beforeEach(guard: Router.NavigationGuard): Router.unHook ;
   beforeResolve(guard: Router.NavigationGuard): Router.unHook ;
   afterEach(hook: Router.AfterNavigationHook): Router.unHook;

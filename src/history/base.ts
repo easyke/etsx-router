@@ -38,6 +38,7 @@ export abstract class History {
     this.errorCbs = []
     this.cb = () => void 0
   }
+  init(): void {}
 
   listen(cb: Router.listenCallback) {
     this.cb = cb

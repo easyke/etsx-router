@@ -6,6 +6,8 @@ import { cleanPath } from './util/path'
 import { START } from './util/route'
 import { supportsPushState } from './util/push-state'
 import { normalizeLocation } from './util/location'
+import getLink from './components/link'
+import getView from './components/view'
 
 import { HashHistory } from './history/hash'
 import { HTML5History } from './history/html5'
@@ -22,6 +24,8 @@ export class Router  {
   mode: Router.mode;
   history: HashHistory | HTML5History | AbstractHistory;
   matcher: Matcher;
+  getLink: (router: Router, options: any) => any;
+  getView: (router: Router, options: any) => any;
   fallback: boolean;
   beforeHooks: Router.NavigationGuard[];
   resolveHooks: Router.NavigationGuard[];
@@ -37,21 +41,25 @@ export class Router  {
      * 创建路由映射表
      */
     this.matcher = createMatcher(this.options.routes || [], this)
+    this.getLink = (options: any) => getLink(this, options)
+    this.getView = (options: any) => getView(this, options)
 
     this.fallback = this.options.mode === 'history' && !supportsPushState && this.options.fallback !== false
+    let mode: Router.mode | void
     if (this.options.mode) {
-      this.mode = this.options.mode
-    } else if (isWeex) {
-      this.mode = 'weex'
+      mode = this.options.mode
     } else if (inBrowser) {
-      this.mode = this.options.mode || 'history'
+      mode = this.options.mode || 'history'
       if (this.fallback) {
-        this.mode = 'hash'
+        mode = 'hash'
       }
-    } else {
-      this.mode = 'abstract'
     }
-
+    if (isWeex) {
+      mode = 'weex'
+    } else if (!inBrowser) {
+      mode = 'abstract'
+    }
+    this.mode = mode || 'abstract'
     switch (this.mode) {
       // case 'weex':
       //   this.history = new WeexHistory(this, this.options.base)
@@ -70,6 +78,11 @@ export class Router  {
         if (process.env.NODE_ENV !== 'production') {
           assert(false, `invalid mode: ${this.mode}`)
         }
+    }
+  }
+  init() {
+    if (typeof this.history.init === 'function') {
+      this.history.init()
     }
   }
   beforeEach(guard: Router.NavigationGuard): Router.unHook {

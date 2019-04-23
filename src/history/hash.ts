@@ -17,6 +17,16 @@ export class HashHistory extends History {
     ensureSlash()
   }
 
+  init(): void {
+    const setupHashListener = () => {
+      this.setupListeners()
+    }
+    this.transitionTo(
+      this.getCurrentLocation(),
+      setupHashListener,
+      setupHashListener,
+    )
+  }
   // this is delayed until the app mounts
   // to avoid the hashchange listener being fired too early
   setupListeners() {

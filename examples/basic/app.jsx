@@ -1,5 +1,5 @@
 // tslint:disable:max-classes-per-file
-import { getRouter } from '@etsx/router'
+import Router from '@etsx/router'
 import raxjsPropTypes from 'rax-proptypes'
 const ReactDOM = require('react-dom');
 const raxjs = require('rax')
@@ -82,7 +82,7 @@ const run = ({ Component, createElement, cloneElement }, PropTypes) => {
     }
   }
   // 2. Create the router
-  const router = getRouter({
+  const router = new Router({
     mode: 'history',
     base: __dirname,
     routes: [
@@ -104,9 +104,9 @@ const run = ({ Component, createElement, cloneElement }, PropTypes) => {
         component: Unicode,
       },
     ],
-  }, { Component, createElement, cloneElement, PropTypes})
-  const RouterLink = router.Link
-  const RouterView = router.View
+  })
+  const RouterLink = router.getLink({ Component, createElement, cloneElement, PropTypes })
+  const RouterView = router.getView({ Component, createElement, PropTypes })
   console.log('router', router)
   // router.push('/foo')
 
@@ -115,6 +115,9 @@ const run = ({ Component, createElement, cloneElement }, PropTypes) => {
     constructor(...args) {
       super(...args)
       console.log(444, this.props)
+    }
+    componentWillMount() {
+      router.init()
     }
     render() {
       return (<div id="app">
