@@ -80,6 +80,8 @@ export class Router  {
         }
     }
   }
+  withRouter() {
+  }
   init() {
     if (typeof this.history.init === 'function') {
       this.history.init()

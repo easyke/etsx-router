@@ -44,7 +44,7 @@ export default (router, { Component, createElement, PropTypes }) => class Router
           return super.componentWillMount()
         }
       }
-      componentWillUnmount(){
+      componentWillUnmount() {
         if (matched.instances[name] === this) {
           matched.instances[name] = void 0
         }
