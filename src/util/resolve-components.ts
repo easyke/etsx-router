@@ -16,7 +16,7 @@ export function resolveAsyncComponents(matched: RouteRecord[]): Router.Navigatio
       // we are not using Vue's default async resolving mechanism because
       // we want to halt the navigation until the incoming component has been
       // resolved.
-      if (typeof def === 'function' && def.cid === undefined) {
+      if (typeof def === 'function' && match.async[key] === true) {
         hasAsync = true
         pending++
 
@@ -25,9 +25,7 @@ export function resolveAsyncComponents(matched: RouteRecord[]): Router.Navigatio
             resolvedDef = resolvedDef.default
           }
           // save resolved on async factory in case it's used elsewhere
-          def.resolved = typeof resolvedDef === 'function'
-            ? resolvedDef
-            : _Vue.extend(resolvedDef)
+          match.async[key] = false
           match.components[key] = resolvedDef
           pending--
           if (pending <= 0) {

@@ -58,7 +58,7 @@ declare type Route = {
   meta?: Route.meta;
 }
 
-declare type RouteRecord<Component extends any = any> = {
+declare type RouteRecord = {
   /**
    * 字符串，对应当前路由的路径，总是解析为绝对路径
    * 如 "/foo/bar"。
@@ -67,6 +67,7 @@ declare type RouteRecord<Component extends any = any> = {
   regex: RegExp;
   keys: any[];
   components: Dictionary<Component>;
+  async: Dictionary<boolean>;
   instances: Dictionary<ComponentInstance>;
   /**
    * 当前路由的名称，如果有的话。
@@ -162,6 +163,7 @@ declare namespace Router {
      * 命名视图组件
      */
     components?: Dictionary<Component>;
+    async: boolean | Dictionary<boolean>;
     redirect?: Router.RedirectOption;
     /**
      * 别名

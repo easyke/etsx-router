@@ -231,12 +231,34 @@ export class Matcher {
     }
     // 创建记录规则
     const { keys, regex } = compileRouteRegex(normalizedPath, pathToRegexpOptions)
+    let components: RouteRecord['components'] | undefined
+    if (typeof route.components === 'object') {
+      components = route.components
+    } else if (route.component && typeof route.component === 'function') {
+      components = { default: route.component }
+    } else if (typeof route.component === 'object') {
+      components = route.component
+    } else {
+      throw new Error('component or components must is class or object');
+    }
+
+    const async: RouteRecord['async'] = {};
+    Object.keys(components).forEach((key) => {
+      if (typeof route.async === 'boolean') {
+        async[key] = route.async
+      } else if (typeof route.async === 'object') {
+        async[key] = route.async[key] || false
+      } else {
+        async[key] = false
+      }
+    })
+
     // 生成记录对象
     const record: RouteRecord = {
       path: normalizedPath,
       keys,
       regex,
-      components: route.components || { default: route.component },
+      components,
       instances: {},
       name,
       parent,
@@ -249,6 +271,7 @@ export class Matcher {
         : route.components
           ? route.props
           : { default: route.props },
+      async,
     }
     if (route.children) {
       // Warn if route is named, does not redirect and has a default child route.

@@ -39,15 +39,15 @@ export default (router, { Component, createElement, PropTypes }) => class Router
 
     const component = cache[name] = class extends matched.components[name]{
       componentWillMount() {
-        console.log('componentWillMount')
         matched.instances[name] = this
         if (super.componentWillMount) {
           return super.componentWillMount()
         }
       }
       componentWillUnmount(){
-        console.log('componentWillUnmount')
-        matched.instances[name] = void 0
+        if (matched.instances[name] === this) {
+          matched.instances[name] = void 0
+        }
         if (super.componentWillUnmount) {
           return super.componentWillUnmount()
         }

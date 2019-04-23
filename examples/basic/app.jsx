@@ -17,21 +17,33 @@ const run = ({ Component, createElement, cloneElement }, PropTypes) => {
     render() {
       return createElement('div', {}, 'home')
     }
+    beforeRouteUpdate(to, from, next) {
+      console.log('\nbeforeRouteUpdate-Home-在当前路由改变，但是该组件被复用时调用')
+      next()
+    }
+    beforeRouteLeave(to, from, next) {
+      console.log('\nbeforeRouteLeave-Home-导航离开该组件的对应路由时调用')
+      next()
+    }
+    beforeRouteEnter(to, from, next) {
+      console.log('\nbeforeRouteEnter-Home-因为当守卫执行前，组件实例还没被创建')
+      next()
+    }
   }
   class Foo extends Component {
     render() {
       return createElement('div', {}, 'foo')
     }
     beforeRouteUpdate(to, from, next) {
-      console.log('\nbeforeRouteUpdate-Foo-在当前路由改变，但是该组件被复用时调用', next)
+      console.log('\nbeforeRouteUpdate-Foo-在当前路由改变，但是该组件被复用时调用')
       next()
     }
     beforeRouteLeave(to, from, next) {
-      console.log('\nbeforeRouteLeave-Foo-导航离开该组件的对应路由时调用', next)
+      console.log('\nbeforeRouteLeave-Foo-导航离开该组件的对应路由时调用')
       next()
     }
     beforeRouteEnter(to, from, next) {
-      console.log('\nbeforeRouteEnter-Foo-因为当守卫执行前，组件实例还没被创建', next)
+      console.log('\nbeforeRouteEnter-Foo-因为当守卫执行前，组件实例还没被创建')
       next()
     }
   }
@@ -40,15 +52,15 @@ const run = ({ Component, createElement, cloneElement }, PropTypes) => {
       return createElement('div', {}, 'bar')
     }
     beforeRouteUpdate(to, from, next) {
-      console.log('\nbeforeRouteUpdate-Bar-在当前路由改变，但是该组件被复用时调用', next)
+      console.log('\nbeforeRouteUpdate-Bar-在当前路由改变，但是该组件被复用时调用')
       next()
     }
     beforeRouteLeave(to, from, next) {
-      console.log('\nbeforeRouteLeave-Bar-导航离开该组件的对应路由时调用', next)
+      console.log('\nbeforeRouteLeave-Bar-导航离开该组件的对应路由时调用')
       next()
     }
     beforeRouteEnter(to, from, next) {
-      console.log('\nbeforeRouteEnter-Bar-因为当守卫执行前，组件实例还没被创建', next)
+      console.log('\nbeforeRouteEnter-Bar-因为当守卫执行前，组件实例还没被创建')
       next()
     }
   }
@@ -57,15 +69,15 @@ const run = ({ Component, createElement, cloneElement }, PropTypes) => {
       return createElement('div', {}, 'unicode')
     }
     beforeRouteUpdate(to, from, next) {
-      console.log('\nbeforeRouteUpdate-Unicode-在当前路由改变，但是该组件被复用时调用', next)
+      console.log('\nbeforeRouteUpdate-Unicode-在当前路由改变，但是该组件被复用时调用')
       next()
     }
     beforeRouteLeave(to, from, next) {
-      console.log('\nbeforeRouteLeave-Unicode-导航离开该组件的对应路由时调用', next)
+      console.log('\nbeforeRouteLeave-Unicode-导航离开该组件的对应路由时调用')
       next()
     }
     beforeRouteEnter(to, from, next) {
-      console.log('\nbeforeRouteEnter-Unicode-因为当守卫执行前，组件实例还没被创建', next)
+      console.log('\nbeforeRouteEnter-Unicode-因为当守卫执行前，组件实例还没被创建')
       next()
     }
   }
@@ -80,7 +92,8 @@ const run = ({ Component, createElement, cloneElement }, PropTypes) => {
       },
       {
         path: '/foo',
-        component: Foo,
+        component: () => Promise.resolve(Foo),
+        async: true,
       },
       {
         path: '/bar',
