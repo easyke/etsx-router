@@ -306,6 +306,7 @@ export class Matcher {
         const aliasRoute = {
           path: alias,
           children: route.children,
+          async: route.async,
         }
         this.addRouteRecord(
           aliasRoute,
