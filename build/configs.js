@@ -3,11 +3,12 @@ const buble = require('rollup-plugin-buble')
 const cjs = require('rollup-plugin-commonjs')
 const node = require('rollup-plugin-node-resolve')
 const replace = require('rollup-plugin-replace')
+const typescript = require('rollup-plugin-typescript')
 const version = process.env.VERSION || require('../package.json').version
 const banner =
 `/*!
   * etsx-router v${version}
-  * (c) ${new Date().getFullYear()} yuchonghua
+  * (c) ${new Date().getFullYear()} huadi
   * @license MIT
   */`
 
@@ -52,6 +53,9 @@ function genConfig (opts) {
     input: {
       input: resolve('src/index.ts'),
       plugins: [
+        typescript({
+          typescript: require('typescript')
+        }),
         node(),
         cjs(),
         replace({

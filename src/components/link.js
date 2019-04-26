@@ -1,104 +1,133 @@
 import { createRoute, isSameRoute, isIncludedRoute } from '../util/route'
+function _objectWithoutPropertiesLoose(source, excluded) { if (source == null) return {}; var target = {}; var sourceKeys = Object.keys(source); var key, i; for (i = 0; i < sourceKeys.length; i++) { key = sourceKeys[i]; if (excluded.indexOf(key) >= 0) continue; target[key] = source[key]; } return target; }
 
-export default (router, { Component, createElement, cloneElement, PropTypes }) => class RouterLink extends Component {
-  static defaultProps = {
-    tag: 'a',
-    event: 'onClick'
-  }
-  static propTypes = {
-    to: PropTypes.oneOfType([
-      PropTypes.string.isRequired,
-      PropTypes.object.isRequired
-    ]),
-    tag: PropTypes.string,
-    exact: PropTypes.bool,
-    append: PropTypes.bool,
-    replace: PropTypes.bool,
-    activeClass: PropTypes.string,
-    exactActiveClass: PropTypes.string,
-    event: PropTypes.oneOfType([
-      PropTypes.string,
-      PropTypes.arrayOf(PropTypes.string)
-    ])
-  }
-
-  render() {
-    const { tag, href: hrefTo = '/', to = hrefTo, event = [], children: childrenOrigin, ...props } = this.props
-    // 得到当前激活的 route 对象
-    const current = router.currentRoute
-    const { location, route, href } = router.resolve(to, current, props.append)
-
-    const classes = {}
-    const globalActiveClass = router.options.linkActiveClass
-    const globalExactActiveClass = router.options.linkExactActiveClass
-    // Support global empty active class
-    const activeClassFallback = globalActiveClass == null
-      ? 'router-link-active'
-      : globalActiveClass
-    const exactActiveClassFallback = globalExactActiveClass == null
-      ? 'router-link-exact-active'
-      : globalExactActiveClass
-    const activeClass = props.activeClass == null
-      ? activeClassFallback
-      : props.activeClass
-    const exactActiveClass = props.exactActiveClass == null
-      ? exactActiveClassFallback
-      : props.exactActiveClass
-    const compareTarget = location.path
-      ? createRoute(null, location, null, router)
-      : route
-
-    classes[exactActiveClass] = isSameRoute(current, compareTarget)
-    classes[activeClass] = props.exact
-      ? classes[exactActiveClass]
-      : isIncludedRoute(current, compareTarget)
-
-    const handler = e => {
-      if (guardEvent(e)) {
-        if (props.replace) {
-          router.replace(location)
-        } else {
-          router.push(location)
+export default (router, { Component, createElement, cloneElement, PropTypes }) => {
+  
+    function RouterLink() {
+      return Component.apply(this, arguments) || this;
+    }
+    RouterLink.prototype = Object.create(Component.prototype); RouterLink.prototype.constructor = RouterLink; RouterLink.__proto__ = Component;
+    var _proto = RouterLink.prototype;
+  
+    _proto.render = function render() {
+      var _this$props = this.props,
+          tag = _this$props.tag,
+          _this$props$href = _this$props.href,
+          hrefTo = _this$props$href === void 0 ? '/' : _this$props$href,
+          _this$props$to = _this$props.to,
+          to = _this$props$to === void 0 ? hrefTo : _this$props$to,
+          _this$props$event = _this$props.event,
+          event = _this$props$event === void 0 ? [] : _this$props$event,
+          childrenOrigin = _this$props.children,
+          props = _objectWithoutPropertiesLoose(_this$props, ["tag", "href", "to", "event", "children"]); // 得到当前激活的 route 对象
+  
+  
+      var current = router.currentRoute;
+  
+      var _router$resolve = router.resolve(to, current, props.append),
+          location = _router$resolve.location,
+          route = _router$resolve.route,
+          href = _router$resolve.href;
+  
+      var classes = {};
+      var globalActiveClass = router.options.linkActiveClass;
+      var globalExactActiveClass = router.options.linkExactActiveClass; // Support global empty active class
+  
+      var activeClassFallback = globalActiveClass == null ? 'router-link-active' : globalActiveClass;
+      var exactActiveClassFallback = globalExactActiveClass == null ? 'router-link-exact-active' : globalExactActiveClass;
+      var activeClass = props.activeClass == null ? activeClassFallback : props.activeClass;
+      var exactActiveClass = props.exactActiveClass == null ? exactActiveClassFallback : props.exactActiveClass;
+      var compareTarget = location.path ? createRoute(null, location, null, router) : route;
+      classes[exactActiveClass] = isSameRoute(current, compareTarget);
+      classes[activeClass] = props.exact ? classes[exactActiveClass] : isIncludedRoute(current, compareTarget);
+  
+      var handler = function handler(e) {
+        if (guardEvent(e)) {
+          if (props.replace) {
+            router.replace(location);
+          } else {
+            router.push(location);
+          }
+        }
+      };
+  
+      props.className = Object.keys(classes).filter(function (name) {
+        return classes[name];
+      }).join(' ');
+  
+      if (!props.className) {
+        delete props.className;
+      }
+  
+      var on = {
+        onClick: guardEvent
+      };
+  
+      if (Array.isArray(event)) {
+        event.forEach(function (e) {
+          on[e] = handler;
+        });
+      } else {
+        on[event] = handler;
+      }
+  
+      props.href = href;
+      var children = childrenOrigin;
+  
+      if (tag === 'a') {
+        Object.assign(props, on);
+        props.href = href;
+      } else {
+        // find the first <a> child and apply listener and href
+        var res = findAnchor(childrenOrigin, cloneElement, function (a) {
+          if (cloneElement) {
+            var _a$props = a.props,
+                _children = _a$props.children,
+                _props = _objectWithoutPropertiesLoose(_a$props, ["children"]);
+  
+            return cloneElement(a, Object.assign(_props, on, {
+              href: href
+            }), [_children]); // a.props = Object.assign({}, a.props, on, { href })
+          } else {
+            Object.assign(a.props, on, {
+              href: href
+            });
+            return a;
+          }
+        });
+        children = res.children;
+  
+        if (!res.isFinded) {
+          Object.assign(props, on);
         }
       }
-    }
-
-    props.className = Object.keys(classes).filter(name => classes[name]).join(' ')
-    if (!props.className) {
-      delete props.className
-    }
-
-    const on = { onClick: guardEvent }
-    if (Array.isArray(event)) {
-      event.forEach(e => { on[e] = handler })
-    } else {
-      on[event] = handler
-    }
-
-    props.href = href
-    let children = childrenOrigin
-    if (tag === 'a') {
-      Object.assign(props, on)
-      props.href = href
-    } else {
-      // find the first <a> child and apply listener and href
-      const res = findAnchor(childrenOrigin, cloneElement, (a) => {
-        if (cloneElement) {
-          const { children, ...props } = a.props
-          return cloneElement(a, Object.assign(props, on, { href }), [children])
-          // a.props = Object.assign({}, a.props, on, { href })
-        } else {
-          Object.assign(a.props, on, { href })
-          return a
-        }
-      })
-      children = res.children
-      if (!res.isFinded) {
-        Object.assign(props, on)
+  
+      return createElement(tag, props, children);
+    };
+  
+    Object.assign(RouterLink, {
+      defaultProps:{
+        tag: 'a',
+        event: 'onClick'
+      },
+      propTypes:{
+        to: PropTypes.oneOfType([
+          PropTypes.string.isRequired,
+          PropTypes.object.isRequired
+        ]),
+        tag: PropTypes.string,
+        exact: PropTypes.bool,
+        append: PropTypes.bool,
+        replace: PropTypes.bool,
+        activeClass: PropTypes.string,
+        exactActiveClass: PropTypes.string,
+        event: PropTypes.oneOfType([
+          PropTypes.string,
+          PropTypes.arrayOf(PropTypes.string)
+        ])
       }
-    }
-    return createElement(tag, props, children)
-  }
+    })
+    return RouterLink;
 }
 
 function guardEvent(e) {
