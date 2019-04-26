@@ -9,6 +9,7 @@ import {
   resolveAsyncComponents,
 } from '../util/resolve-components'
 type postEnterCb = () => void;
+
 export abstract class History {
   router: Router;
   base: string;

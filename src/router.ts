@@ -23,7 +23,7 @@ export class Router  {
   currentRoute: Route;
   mode: Router.mode;
   history: HashHistory | HTML5History | AbstractHistory;
-  matcher: Matcher;
+  matcher?: Matcher;
   getLink: (router: Router, options: any) => any;
   getView: (router: Router, options: any) => any;
   fallback: boolean;
@@ -38,9 +38,13 @@ export class Router  {
     this.afterHooks = []
     this.currentRoute = START
     /**
-     * 创建路由映射表
+     * 如果提供了一个匹配方法进来，就直接使用，否则就创建路由映射表
      */
-    this.matcher = createMatcher(this.options.routes || [], this)
+    if (typeof this.options.match === 'function') {
+      this.match = this.options.match
+    } else if (this.options.routes !== false) {
+      this.matcher = createMatcher(this.options.routes || [], this)
+    }
     this.getLink = (options: any) => getLink(this, options)
     this.getView = (options: any) => getView(this, options)
 
@@ -184,10 +188,16 @@ export class Router  {
     current?: Route,
     redirectedFrom?: EtsxLocation,
   ): Route {
+    if (!this.matcher) {
+      throw new Error('No matcher instance');
+    }
     return this.matcher.match(raw, current, redirectedFrom)
   }
 
   addRoutes(routes: Router.Config[]) {
+    if (!this.matcher) {
+      throw new Error('No matcher instance');
+    }
     this.matcher.addRoutes(routes)
     if (this.currentRoute !== START) {
       this.history.transitionTo(this.history.getCurrentLocation())

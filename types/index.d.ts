@@ -201,9 +201,17 @@ declare namespace Router {
 
   export type Options = {
     /**
+     * 匹配
+     */
+    match?: (
+      raw: RawLocation,
+      current?: Route,
+      redirectedFrom?: EtsxLocation,
+    ) => Route;
+    /**
      * 路由配置
      */
-    routes?: Config[];
+    routes?: Config[] | false;
     /**
      * 默认值: "weex" (weex环境) | "history" (浏览器环境) | "abstract" (Node.js 环境)
      * 可选值: "weex" | "history" | "abstract"

@@ -1,5 +1,5 @@
 // tslint:disable:max-classes-per-file
-import Router from '@etsx/router'
+import Router, { createMatcher } from '@etsx/router'
 import raxjsPropTypes from 'rax-proptypes'
 const ReactDOM = require('react-dom');
 const raxjs = require('rax')
@@ -8,107 +8,80 @@ const reactPropTypes = require('prop-types')
 const react = require('react')
 const anujs = require('anujs')
 const anujsPropTypes = require('anujs/lib/ReactPropTypes')
-console.log('anujs', anujs)
-console.log('raxjs', raxjs)
-console.log('react', react)
+
+
 const run = ({ Component, createElement, cloneElement }, PropTypes) => {
   // 1. Define route components
   class Home extends Component {
     render() {
       return createElement('div', {}, 'home')
     }
-    beforeRouteUpdate(to, from, next) {
-      console.log('\nbeforeRouteUpdate-Home-在当前路由改变，但是该组件被复用时调用')
-      next()
-    }
-    beforeRouteLeave(to, from, next) {
-      console.log('\nbeforeRouteLeave-Home-导航离开该组件的对应路由时调用')
-      next()
-    }
-    beforeRouteEnter(to, from, next) {
-      console.log('\nbeforeRouteEnter-Home-因为当守卫执行前，组件实例还没被创建')
-      next()
-    }
   }
   class Foo extends Component {
     render() {
       return createElement('div', {}, 'foo')
-    }
-    beforeRouteUpdate(to, from, next) {
-      console.log('\nbeforeRouteUpdate-Foo-在当前路由改变，但是该组件被复用时调用')
-      next()
-    }
-    beforeRouteLeave(to, from, next) {
-      console.log('\nbeforeRouteLeave-Foo-导航离开该组件的对应路由时调用')
-      next()
-    }
-    beforeRouteEnter(to, from, next) {
-      console.log('\nbeforeRouteEnter-Foo-因为当守卫执行前，组件实例还没被创建')
-      next()
     }
   }
   class Bar extends Component {
     render() {
       return createElement('div', {}, 'bar')
     }
-    beforeRouteUpdate(to, from, next) {
-      console.log('\nbeforeRouteUpdate-Bar-在当前路由改变，但是该组件被复用时调用')
-      next()
-    }
-    beforeRouteLeave(to, from, next) {
-      console.log('\nbeforeRouteLeave-Bar-导航离开该组件的对应路由时调用')
-      next()
-    }
-    beforeRouteEnter(to, from, next) {
-      console.log('\nbeforeRouteEnter-Bar-因为当守卫执行前，组件实例还没被创建')
-      next()
-    }
   }
   class Unicode extends Component {
     render() {
       return createElement('div', {}, 'unicode')
-    }
-    beforeRouteUpdate(to, from, next) {
-      console.log('\nbeforeRouteUpdate-Unicode-在当前路由改变，但是该组件被复用时调用')
-      next()
-    }
-    beforeRouteLeave(to, from, next) {
-      console.log('\nbeforeRouteLeave-Unicode-导航离开该组件的对应路由时调用')
-      next()
-    }
-    beforeRouteEnter(to, from, next) {
-      console.log('\nbeforeRouteEnter-Unicode-因为当守卫执行前，组件实例还没被创建')
-      next()
     }
   }
   // 2. Create the router
   const router = new Router({
     mode: 'history',
     base: __dirname,
-    routes: [
-      {
-        path: '/',
-        component: Home,
-      },
-      {
-        path: '/foo',
-        component: () => Promise.resolve(Foo),
-        async: true,
-      },
-      {
-        path: '/bar',
-        component: Bar,
-      },
-      {
-        path: '/é',
-        component: Unicode,
-      },
-    ],
+    routes: false,
+    match: (raw, current, redirectedFrom) => {
+      return (typeof window.aa === 'number' ? matcher : matcher2).match(raw, current, redirectedFrom)
+    }
   })
+  const matcher = createMatcher([
+    {
+      path: '/',
+      component: Home,
+    },
+    {
+      path: '/foo',
+      component: () => Promise.resolve(Foo),
+      async: true,
+    },
+    {
+      path: '/bar',
+      component: Bar,
+    },
+    {
+      path: '/é',
+      component: Unicode,
+    },
+  ], router)
+  const matcher2 = createMatcher([
+    {
+      path: '/',
+      component: Home,
+    },
+    {
+      path: '/foo',
+      component: () => Promise.resolve(Bar),
+      async: true,
+    },
+    {
+      path: '/bar',
+      component: Foo,
+    },
+    {
+      path: '/é',
+      component: Unicode,
+    },
+  ], router)
   const RouterLink = router.getLink({ Component, createElement, cloneElement, PropTypes })
   const RouterView = router.getView({ Component, createElement, PropTypes })
   console.log('router', router)
-  // router.push('/foo')
 
   // 3. Create root app instance.
   return class App extends Component {
